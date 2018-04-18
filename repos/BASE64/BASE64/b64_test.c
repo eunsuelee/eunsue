@@ -5,7 +5,7 @@
 
 /*
 
-* str : 평문을 저장할 변수
+* plaintext : 평문을 저장할 변수
 
 * enc : base64로 encode한 값을 저장할 변수
 
@@ -14,14 +14,14 @@
 */
 int main(void) {
 
-	// 평문 "AB"를 str에 저장
+	// 평문 "AB"를 plaintext에 저장
 
-	unsigned char *str = "AB";
+	unsigned char *plaintext = "AB";
 
 
 	// base64 encode
 	
-	char *enc = b64_encode(str, strlen(str));
+	char *enc = b64_encode(plaintext, strlen(plaintext));
 
 	printf("%s\n", enc); // base64로 encode된 값인 QUI=가 출력
 
