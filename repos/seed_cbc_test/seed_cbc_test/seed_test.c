@@ -62,6 +62,9 @@ void main() {
 
 
 	// ciphertext(암호문) 출력
+
+	printf("ciphertext : %s\n", ciphertext);
+
 	printf("ciphertext : \n");
 
 	for (size_t i = 1; i < outlen1 + 1; i++) {
