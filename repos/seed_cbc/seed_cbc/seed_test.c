@@ -1,13 +1,15 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
+#include "b64.h"
 #include "seedcbc.h"
 
-// 암호문 출력 함수
+// 암호문 16진수로 출력 함수
 void print_cipher(unsigned char *ciphertext, int cipher_outlen){
 	size_t i = 0;
 	
-	printf("ciphertext : ");
+	printf("ciphertext_hex : ");
 	
 	for (i = 1; i < cipher_outlen + 1; i++) 
 		printf("%02X ", *(ciphertext + i - 1));
@@ -44,10 +46,16 @@ void main() {
 	unsigned char plaintext1[10240] = {0x00, };
 
 	// 암호문을 복호화한 평문을 저장할 변수
-	unsigned char plaintext2[128] = {0x00, };
+	unsigned char plaintext2[10240] = {0x00, };
 
 	// 암호문을 저장할 변수
 	unsigned char ciphertext[144] = {0x00, };
+
+	// Base64 encoding 변수
+	char *b64_enc = NULL;
+
+	// Base64 decoding 변수
+	unsigned char *b64_dec = NULL;
 
 	/*
 	* cipher_outlne : 암호문의 길이를 저장할 변수
@@ -60,9 +68,9 @@ void main() {
 
 
 	printf("평문을 입력하세요 : ");
-	scanf("%10240[^\n]", &plaintext1);
+	//scanf("%10240[^\n]", &plaintext1);
+	fgets((char *)plaintext1, sizeof(plaintext1), stdin);
 
-	
 	plaintext1_size = strlen((const char*)plaintext1);
 
 
@@ -80,6 +88,12 @@ void main() {
 	cipher_outlen = KISA_SEED_CBC_ENCRYPT(key, iv, plaintext1, plaintext1_size, ciphertext);
 
 
+	//base64 encoding 부분
+	b64_enc = b64_encode(ciphertext, cipher_outlen);
+
+	//base64 decoding 부분
+	b64_dec = b64_decode(b64_enc, strlen(b64_enc));
+
 	/*
 
 	* SEED-CBC 복호화
@@ -89,11 +103,11 @@ void main() {
 	* 생성된 평문의 길이 반환 (결과가 0일 경우 복호화 실패)
 
 	*/
-	plain_outlen = KISA_SEED_CBC_DECRYPT(key, iv, ciphertext, cipher_outlen, plaintext2);
-
+	plain_outlen = KISA_SEED_CBC_DECRYPT(key, iv, b64_dec, cipher_outlen, plaintext2);
 
 	// ciphertext(암호문) 출력
-	print_cipher(ciphertext,cipher_outlen);
+	//print_cipher(ciphertext,cipher_outlen);
+	printf("ciphertext_b64 : %s\n", b64_enc);
 
 	// plaintext(평문) 출력
 	print_plain(plaintext2,plain_outlen);

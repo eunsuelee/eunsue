@@ -50,7 +50,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)SEED;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)SEED;$(SolutionDir)BASE64;</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -75,10 +75,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\BASE64\decode.c" />
+    <ClCompile Include="..\BASE64\encode.c" />
     <ClCompile Include="..\SEED\seedcbc.c" />
     <ClCompile Include="seed_test.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\BASE64\b64.h" />
     <ClInclude Include="..\SEED\seedcbc.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
