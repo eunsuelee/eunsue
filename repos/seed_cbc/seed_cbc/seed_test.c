@@ -3,6 +3,30 @@
 #include <stdlib.h>
 #include "seedcbc.h"
 
+// 암호문 출력 함수
+void print_cipher(unsigned char *ciphertext, int cipher_outlen){
+	size_t i = 0;
+	
+	printf("ciphertext : ");
+	
+	for (i = 1; i < cipher_outlen + 1; i++) 
+		printf("%02X ", *(ciphertext + i - 1));
+	
+	printf("\n");
+}
+
+// 평문 출력 함수
+void print_plain(unsigned char *plaintext, int plain_outlen){
+	size_t i = 0;
+
+	printf("plaintext2 : ");
+
+	for (i = 0; i < plain_outlen; i++)
+		printf("%c", *(plaintext + i));
+
+	printf("\n");
+}
+
 
 void main() {
 
@@ -16,40 +40,30 @@ void main() {
 								0xAE,0x5C,0xD3,0x4D, 0xA0,0x6C,0x3C,0x8E };
 
 
-	/*unsigned char plaintext1[128] = { 0xB4,0x0D,0x70,0x03, 0xD9,0xB6,0x90,0x4B,
-										0x35,0x62,0x27,0x50, 0xC9,0x1A,0x24,0x57,
-										0x5B,0xB9,0xA6,0x32, 0x36,0x4A,0xA2,0x6E,
-										0x3A,0xC0,0xCF,0x3A, 0x9C,0x9D,0x0D,0xCB };*/
-
 	// 평문을 입력받을 함수
 	unsigned char plaintext1[10240] = {0x00, };
-	//unsigned char *plaintext1 = NULL;
 
 	// 암호문을 복호화한 평문을 저장할 변수
-	unsigned char plaintext2[128];
+	unsigned char plaintext2[128] = {0x00, };
 
 	// 암호문을 저장할 변수
-	unsigned char ciphertext[144];
+	unsigned char ciphertext[144] = {0x00, };
 
 	/*
-	* outlne1 : 암호문의 길이를 저장할 변수
-	* outlen2 : 평문의 길이를 저장할 변수
+	* cipher_outlne : 암호문의 길이를 저장할 변수
+	* plain_outlen : 평문의 길이를 저장할 변수
 	*/
-	int outlen1, outlen2;
+	int cipher_outlen = 0, plain_outlen = 0;
 
-	// for문에 사용할 변수
-	size_t i, plaintext_size;
+	// 평문의 길이를 저장할 변수
+	size_t plaintext1_size = 0;
 
 
 	printf("평문을 입력하세요 : ");
-	//scanf("%ms", &plaintext1);
 	scanf("%10240[^\n]", &plaintext1);
-	//gets((char*)plaintext1);
 
 	
-
-	// 평문의 길이를 저장할 변수
-	plaintext_size = strlen((const char*)plaintext1);
+	plaintext1_size = strlen((const char*)plaintext1);
 
 
 	/*
@@ -58,52 +72,31 @@ void main() {
 
 	* key, iv, 입력버퍼(평문), 입력길이(평문길이), 출력버퍼(암호문) 입력
 
+	* padding PKCS#7 이용
+
 	* 생성된 암호문의 길이 반환 (결과가 0일 경우 암호화 실패)
 
 	*/
-	outlen1 = KISA_SEED_CBC_ENCRYPT(key, iv, plaintext1, plaintext_size, ciphertext);
+	cipher_outlen = KISA_SEED_CBC_ENCRYPT(key, iv, plaintext1, plaintext1_size, ciphertext);
 
 
 	/*
 
 	* SEED-CBC 복호화
 
-	* key, iv, 입력버퍼(암호문), 입력길이(암호문길이), 출력버퍼(평문) 입력
+	* key, iv, 입력버퍼(암호문), 입력길이(암호문길이), 출력버퍼(평문) 입력퍄
 
 	* 생성된 평문의 길이 반환 (결과가 0일 경우 복호화 실패)
 
 	*/
-	outlen2 = KISA_SEED_CBC_DECRYPT(key, iv, ciphertext, outlen1, plaintext2);
+	plain_outlen = KISA_SEED_CBC_DECRYPT(key, iv, ciphertext, cipher_outlen, plaintext2);
 
 
 	// ciphertext(암호문) 출력
-
-	printf("ciphertext : \n");
-
-	
-	for (i = 1; i < outlen1 + 1; i++) {
-		printf("%02X ", *(ciphertext + i - 1));
-
-
-		if (i % 16 == 0)
-			printf("\n");
-		else if (i % 4 == 0)
-			printf("	");
-
-
-	}
-	
-	printf("\n");
+	print_cipher(ciphertext,cipher_outlen);
 
 	// plaintext(평문) 출력
-
-	printf("plaintext2 : ");
-
-	for (i = 0; i < outlen2; i++)
-		printf("%c", *(plaintext2 + i));
-
-	printf("\n");
-	
+	print_plain(plaintext2,plain_outlen);
 	
 
 	return;
