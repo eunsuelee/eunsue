@@ -65,6 +65,7 @@ void main() {
 
 	// 평문의 길이를 저장할 변수
 	size_t plaintext1_size = 0;
+	size_t dec_len = 0;
 
 
 	printf("평문을 입력하세요 : ");
@@ -92,7 +93,9 @@ void main() {
 	b64_enc = b64_encode(ciphertext, cipher_outlen);
 
 	//base64 decoding 부분
-	b64_dec = b64_decode(b64_enc, strlen(b64_enc));
+	b64_dec = b64_decode_ex(b64_enc, strlen(b64_enc), &dec_len);
+
+	printf("b64_dec_len : %d\n", dec_len);
 
 	/*
 
@@ -103,15 +106,21 @@ void main() {
 	* 생성된 평문의 길이 반환 (결과가 0일 경우 복호화 실패)
 
 	*/
-	plain_outlen = KISA_SEED_CBC_DECRYPT(key, iv, b64_dec, cipher_outlen, plaintext2);
+	//plain_outlen = KISA_SEED_CBC_DECRYPT(key, iv, b64_dec, cipher_outlen, plaintext2);
+	plain_outlen = KISA_SEED_CBC_DECRYPT(key, iv, b64_dec, dec_len, plaintext2);
+	
 
 	// ciphertext(암호문) 출력
 	//print_cipher(ciphertext,cipher_outlen);
+	printf("ciphertext : %s\n", ciphertext);
 	printf("ciphertext_b64 : %s\n", b64_enc);
+	printf("b64_dec : %s\n", b64_dec);
 
 	// plaintext(평문) 출력
 	print_plain(plaintext2,plain_outlen);
 	
+	free(b64_enc);
+	free(b64_dec);
 
 	return;
 }
