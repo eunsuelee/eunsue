@@ -17,17 +17,6 @@ void print_cipher(unsigned char *ciphertext, int cipher_outlen){
 	printf("\n");
 }
 
-// 평문 출력 함수
-void print_plain(unsigned char *plaintext, int plain_outlen){
-	size_t i = 0;
-
-	printf("plaintext2 : ");
-
-	for (i = 0; i < plain_outlen; i++)
-		printf("%c", *(plaintext + i));
-
-	printf("\n");
-}
 
 
 void main() {
@@ -49,7 +38,7 @@ void main() {
 	unsigned char plaintext2[10240] = {0x00, };
 
 	// 암호문을 저장할 변수
-	unsigned char ciphertext[144] = {0x00, };
+	unsigned char ciphertext[10256] = {0x00, };
 
 	// Base64 encoding 변수
 	char *b64_enc = NULL;
@@ -58,14 +47,16 @@ void main() {
 	unsigned char *b64_dec = NULL;
 
 	/*
-	* cipher_outlne : 암호문의 길이를 저장할 변수
+	* cipher_outlen : 암호문의 길이를 저장할 변수
 	* plain_outlen : 평문의 길이를 저장할 변수
 	*/
 	int cipher_outlen = 0, plain_outlen = 0;
 
 	// 평문의 길이를 저장할 변수
 	size_t plaintext1_size = 0;
-	size_t dec_len = 0;
+
+	// base64로 디코딩된 문장의 길이를 저장할 변수
+	size_t b64dec_len = 0;
 
 
 	printf("평문을 입력하세요 : ");
@@ -93,10 +84,9 @@ void main() {
 	b64_enc = b64_encode(ciphertext, cipher_outlen);
 
 	//base64 decoding 부분
-	b64_dec = b64_decode_ex(b64_enc, strlen(b64_enc), &dec_len);
+	b64_dec = b64_decode_ex(b64_enc, strlen(b64_enc), &b64dec_len);
 
-	printf("b64_dec_len : %d\n", dec_len);
-
+	
 	/*
 
 	* SEED-CBC 복호화
@@ -106,18 +96,19 @@ void main() {
 	* 생성된 평문의 길이 반환 (결과가 0일 경우 복호화 실패)
 
 	*/
-	//plain_outlen = KISA_SEED_CBC_DECRYPT(key, iv, b64_dec, cipher_outlen, plaintext2);
-	plain_outlen = KISA_SEED_CBC_DECRYPT(key, iv, b64_dec, dec_len, plaintext2);
+	plain_outlen = KISA_SEED_CBC_DECRYPT(key, iv, b64_dec, b64dec_len, plaintext2);
 	
 
 	// ciphertext(암호문) 출력
-	//print_cipher(ciphertext,cipher_outlen);
+	/*print_cipher(ciphertext,cipher_outlen);
 	printf("ciphertext : %s\n", ciphertext);
-	printf("ciphertext_b64 : %s\n", b64_enc);
-	printf("b64_dec : %s\n", b64_dec);
+	printf("cipher_b64 : %s\n", b64_enc);
+	printf("b64_decode : %s\n", b64_dec);
+*/
 
-	// plaintext(평문) 출력
-	print_plain(plaintext2,plain_outlen);
+	printf("plain_len : %d\n", plain_outlen);
+	// plaintext2(평문) 출력
+	printf("plaintext : %s\n", plaintext2);
 	
 	free(b64_enc);
 	free(b64_dec);
