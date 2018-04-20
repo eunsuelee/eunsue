@@ -27,8 +27,8 @@ int main(void) {
 
 
 	// base64 decode
-	
-	char *dec = b64_decode(enc, strlen(enc));
+	size_t dec_size;
+	char *dec = b64_decode_ex(enc, strlen(enc), &dec_size);
 
 	printf("%s\n", dec); // base64로 decode된 값인 AB가 출력
 	
