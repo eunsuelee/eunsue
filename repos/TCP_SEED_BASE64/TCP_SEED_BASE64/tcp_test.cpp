@@ -11,7 +11,7 @@
 
 void ErrorHandling(char *message);
 
-unsigned long __stdcall Thread(void *arg);
+//unsigned long __stdcall Thread(void *arg);
 
 //SOCKET         ServerSocket, ClientSocket;
 
@@ -32,7 +32,7 @@ void main(){
 
 	// 암호문을 저장할 변수
 	unsigned char ciphertext[10256] = {0x00, };
-
+	
 	// Base64 decoding 변수
 	unsigned char *b64_dec = NULL;
 
@@ -51,19 +51,19 @@ void main(){
 	WSADATA        wsaData;
     SOCKET         ServerSocket;   //소켓을 선언합니다.
     SOCKADDR_IN    ServerAddress;  //소켓의 주소 정보를 넣는 구조체입니다.
-    unsigned short ServerPort = 5001;
+    unsigned short ServerPort = 5005;
 
-	unsigned long TempVaIL;
+	//unsigned long TempVaIL;
 
 	char message[BUFSIZE];
 	int nRcv;
 
-    if (WSAStartup(0x202,&wsaData) == SOCKET_ERROR)
+    if (WSAStartup(MAKEWORD(2,2),&wsaData) == SOCKET_ERROR)
         ErrorHandling( "WSAStartup설정에서 문제 발생.\n" );
 
 	ServerAddress.sin_family = AF_INET;
     ServerAddress.sin_addr.s_addr = inet_addr( "172.16.10.141" );
-    ServerAddress.sin_port = htons( ServerPort );  //포트번호
+	ServerAddress.sin_port = htons( ServerPort );  //포트번호
 
 	ServerSocket = socket(AF_INET, SOCK_STREAM,0);
 
@@ -84,6 +84,7 @@ void main(){
 
 	printf( "서버로의 연결을 기다리고 있습니다.\n" );
 
+
 	if( (ClientSocket = accept( ServerSocket,(struct sockaddr*)&ClientAddress , &AddressSize )) == INVALID_SOCKET )
 		ErrorHandling( "Accept시 문제 발생.....\n" );
 	else
@@ -95,20 +96,28 @@ void main(){
 
 	closesocket( ServerSocket ); //소켓을 닫습니다.
 
-	while(1){
+	//while(1){
 		printf("Message Recieves ...\n");
 		nRcv = recv(ClientSocket, (char*)ciphertext, sizeof(ciphertext) -1, 0);
 
 		if(nRcv == SOCKET_ERROR){
 			printf("Receive Error...\n");
-			break;
+			//break;
+			closesocket(ClientSocket);
+			WSACleanup();
+			printf( "서버 프로그램이 종료 되었습니다.\n" );
+			return;
 		}
 
 		ciphertext[nRcv] = '\0';
 
 		if(strcmp((const char*)ciphertext, "exit") == 0){
 			printf("Close Client Connection...\n");
-			break;
+			//break;
+			closesocket(ClientSocket);
+			WSACleanup();
+			printf( "서버 프로그램이 종료 되었습니다.\n" );
+			return;
 		}
 
 		b64_dec = b64_decode_ex((const char*)ciphertext, strlen((const char*)ciphertext), &b64dec_len);
@@ -117,18 +126,25 @@ void main(){
 
 		printf("Receive Message : %s", ciphertext);
 		printf("\nSend Message : %s", plaintext);
-		//gets(message);
+		gets(message);
 		if(strcmp(message, "exit") == 0){
-			send(ClientSocket, (const char*)plaintext, (int)strlen((const char*)plaintext), 0);
-			break;
+			//send(ClientSocket, (const char*)plaintext, (int)strlen((const char*)plaintext), 0);
+			//break;
+			closesocket(ClientSocket);
+			WSACleanup();
+			free(b64_dec);
+			printf( "서버 프로그램이 종료 되었습니다.\n" );
+			return;
 		}
 
-		send(ClientSocket, message, (int)strlen(message), 0);
-	}
+		//send(ClientSocket, message, (int)strlen(message), 0);
+	//}
 
 	closesocket(ClientSocket);
 
-    WSACleanup();
+	WSACleanup();
+
+	free(b64_dec);
 
 	printf( "서버 프로그램이 종료 되었습니다.\n" );
 
@@ -144,7 +160,7 @@ void ErrorHandling(char *message){
 	exit(1);
 }
 
-unsigned long __stdcall Thread(void *arg){
+/*unsigned long __stdcall Thread(void *arg){
 	while(1){
 		SOCKET ClientSocket;
 		SOCKADDR_IN ClientAddress;
@@ -162,4 +178,4 @@ unsigned long __stdcall Thread(void *arg){
 	}
 
 	return 1;
-}
+}*/
