@@ -83,7 +83,7 @@
     <ClCompile Include="..\BASE64\decode.c" />
     <ClCompile Include="..\BASE64\encode.c" />
     <ClCompile Include="..\SEED\seedcbc.c" />
-    <ClCompile Include="tcp_test.cpp" />
+    <ClCompile Include="tcp_test.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

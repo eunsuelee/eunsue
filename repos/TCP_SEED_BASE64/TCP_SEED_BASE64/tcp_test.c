@@ -3,17 +3,11 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <WinSock2.h>
-#include <process.h>
 #include "b64.h"
 #include "seedcbc.h"
 
-#define BUFSIZE 10256
 
 void ErrorHandling(char *message);
-
-//unsigned long __stdcall Thread(void *arg);
-
-//SOCKET         ServerSocket, ClientSocket;
 
 void main(){
 
@@ -49,17 +43,22 @@ void main(){
 	size_t b64dec_len = 0;
 
 	WSADATA        wsaData;
-    SOCKET         ServerSocket;   //소켓을 선언합니다.
-    SOCKADDR_IN    ServerAddress;  //소켓의 주소 정보를 넣는 구조체입니다.
+    SOCKET         ServerSocket, ClientSocket;   //소켓을 선언합니다.
+    SOCKADDR_IN    ServerAddress, ClientAddress;  //소켓의 주소 정보를 넣는 구조체입니다.
     unsigned short ServerPort = 5005;
 
-	//unsigned long TempVaIL;
+	/*
+	
+	* nRcv : Recieve한 메시지 길이 변수
+	* AddressSize : ClientAddress size 변수
 
-	char message[BUFSIZE];
-	int nRcv;
+	*/
+	int nRcv, AddressSize;
+
+	//char exit_value[7] = {0x00, };
 
     if (WSAStartup(MAKEWORD(2,2),&wsaData) == SOCKET_ERROR)
-        ErrorHandling( "WSAStartup설정에서 문제 발생.\n" );
+        ErrorHandling( "WSAStartup Error.....\n" );
 
 	ServerAddress.sin_family = AF_INET;
     ServerAddress.sin_addr.s_addr = inet_addr( "172.16.10.141" );
@@ -68,77 +67,72 @@ void main(){
 	ServerSocket = socket(AF_INET, SOCK_STREAM,0);
 
 	if( ServerSocket == INVALID_SOCKET ) //에러 발생시 문구 출력.
-		ErrorHandling( "소켓을 생성할수 없습니다." );
+		ErrorHandling( "Socket Creation Error....." );
 
 	if( bind(ServerSocket,(struct sockaddr*)&ServerAddress,sizeof(ServerAddress) ) == SOCKET_ERROR ) 
-        ErrorHandling( "바인드를 할 수 없습니다." );
+        ErrorHandling( "Bind Error......" );
 
 	if( listen(ServerSocket,SOMAXCONN) == SOCKET_ERROR ) 
-		ErrorHandling( "listen함수 설정을 실패했습니다.\n" );
+		ErrorHandling( "Listen Error.....\n" );
 
 
 	// socket accept
-	SOCKET ClientSocket;
-	SOCKADDR_IN ClientAddress;
-	int AddressSize = sizeof( ClientAddress );
+	AddressSize = sizeof( ClientAddress );
 
-	printf( "서버로의 연결을 기다리고 있습니다.\n" );
+	printf( "Waiting for connection to the server...\n" );
 
 
 	if( (ClientSocket = accept( ServerSocket,(struct sockaddr*)&ClientAddress , &AddressSize )) == INVALID_SOCKET )
-		ErrorHandling( "Accept시 문제 발생.....\n" );
+		ErrorHandling( "Accept Error.....\n" );
 	else
 	{
-		printf("접속 IP: %s, 포트 : %d\n", inet_ntoa(ClientAddress.sin_addr), htons(ClientAddress.sin_port)) ;
-		printf("시작...\n");
+		printf("Connect IP: %s, Port : %d\n", inet_ntoa(ClientAddress.sin_addr), htons(ClientAddress.sin_port)) ;
+		printf("Start...\n\n");
 	}
-	//CreateThread(NULL, 0, Thread, 0, 0, &TempVaIL);
 
 	closesocket( ServerSocket ); //소켓을 닫습니다.
 
-	//while(1){
-		printf("Message Recieves ...\n");
+	while(1){
+		printf("Message Receives ...\n");
+
+		memset(plaintext, '\0', 10240);
+		memset(ciphertext, '\0', 10256);
+		//memset(exit_value, '\0', 7);
+
 		nRcv = recv(ClientSocket, (char*)ciphertext, sizeof(ciphertext) -1, 0);
 
 		if(nRcv == SOCKET_ERROR){
 			printf("Receive Error...\n");
-			//break;
-			closesocket(ClientSocket);
-			WSACleanup();
-			printf( "서버 프로그램이 종료 되었습니다.\n" );
-			return;
+			break;
 		}
 
 		ciphertext[nRcv] = '\0';
 
 		if(strcmp((const char*)ciphertext, "exit") == 0){
 			printf("Close Client Connection...\n");
-			//break;
-			closesocket(ClientSocket);
-			WSACleanup();
-			printf( "서버 프로그램이 종료 되었습니다.\n" );
-			return;
+			break;
 		}
 
 		b64_dec = b64_decode_ex((const char*)ciphertext, strlen((const char*)ciphertext), &b64dec_len);
 
 		plain_outlen = KISA_SEED_CBC_DECRYPT(key, iv, b64_dec, b64dec_len, plaintext);
 
-		printf("Receive Message : %s", ciphertext);
-		printf("\nSend Message : %s", plaintext);
-		gets(message);
-		if(strcmp(message, "exit") == 0){
-			//send(ClientSocket, (const char*)plaintext, (int)strlen((const char*)plaintext), 0);
-			//break;
-			closesocket(ClientSocket);
-			WSACleanup();
-			free(b64_dec);
-			printf( "서버 프로그램이 종료 되었습니다.\n" );
-			return;
+		printf("Receive Message : %s\n", ciphertext);
+		printf("Send Message : %s\n", plaintext);
+
+		/*if(plain_outlen == 5){
+			strncpy(exit_value, (const char*)plaintext, 4);
+			exit_value[4] = '\0';
 		}
 
-		//send(ClientSocket, message, (int)strlen(message), 0);
-	//}
+		if(strcmp(exit_value, "exit") == 0){
+			send(ClientSocket, (const char*)exit_value, strlen(exit_value), 0);
+			break;
+		}*/
+
+		send(ClientSocket, (const char*)plaintext, plain_outlen, 0);
+
+	}
 
 	closesocket(ClientSocket);
 
@@ -146,7 +140,7 @@ void main(){
 
 	free(b64_dec);
 
-	printf( "서버 프로그램이 종료 되었습니다.\n" );
+	printf( "The server program has been terminated.\n" );
 
 	return;
 }
@@ -156,26 +150,5 @@ void ErrorHandling(char *message){
 	fputs(message, stderr);
 	fputc('\n',stderr);
 	getchar();
-	//_getch();
 	exit(1);
 }
-
-/*unsigned long __stdcall Thread(void *arg){
-	while(1){
-		SOCKET ClientSocket;
-		SOCKADDR_IN ClientAddress;
-		int AddressSize = sizeof( ClientAddress );
-
-		printf( "서버로의 연결을 기다리고 있습니다.\n" );
-
-		if( (ClientSocket = accept( ServerSocket,(struct sockaddr*)&ClientAddress , &AddressSize )) == INVALID_SOCKET )
-			ErrorHandling( "Accept시 문제 발생.....\n" );
-		else
-		{
-			printf("접속 IP: %s, 포트 : %d\n", inet_ntoa(ClientAddress.sin_addr), htons(ClientAddress.sin_port)) ;
-			printf("시작...\n");
-		}
-	}
-
-	return 1;
-}*/
