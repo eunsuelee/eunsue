@@ -6,18 +6,10 @@
 #include "seedcbc.h"
 
 // 암호문 16진수로 출력 함수
-void print_cipher(unsigned char *ciphertext, int cipher_outlen){
-	size_t i = 0;
-	
-	printf("ciphertext_hex : ");
-	
-	for (i = 1; i < cipher_outlen + 1; i++) 
-		printf("%02X ", *(ciphertext + i - 1));
-	
-	printf("\n");
-}
+void toHex(unsigned char *ciphertext, int cipher_outlen);
 
-
+// 암호문 binary로 출력 함수
+void ascii_as_binary(unsigned char*ciphertext, int cipher_outlen);
 
 void main() {
 
@@ -91,7 +83,7 @@ void main() {
 
 	* SEED-CBC 복호화
 
-	* key, iv, 입력버퍼(암호문), 입력길이(암호문길이), 출력버퍼(평문) 입력퍄
+	* key, iv, 입력버퍼(암호문), 입력길이(암호문길이), 출력버퍼(평문) 입력
 
 	* 생성된 평문의 길이 반환 (결과가 0일 경우 복호화 실패)
 
@@ -100,18 +92,66 @@ void main() {
 	
 
 	// ciphertext(암호문) 출력
-	/*print_cipher(ciphertext,cipher_outlen);
-	printf("ciphertext : %s\n", ciphertext);
-	printf("cipher_b64 : %s\n", b64_enc);
-	printf("b64_decode : %s\n", b64_dec);
-*/
+	toHex(ciphertext,cipher_outlen);
+	ascii_as_binary(ciphertext,cipher_outlen);
+	printf("\nciphertext : %s\n\n", ciphertext);
+	printf("b64_encode : %s\n\n", b64_enc);
+	printf("b64_decode : %s\n\n", b64_dec);
 
-	printf("plain_len : %d\n", plain_outlen);
+
 	// plaintext2(평문) 출력
 	printf("plaintext : %s\n", plaintext2);
 	
 	free(b64_enc);
 	free(b64_dec);
 
+	return;
+}
+
+void toHex(unsigned char *ciphertext, int cipher_outlen){
+	size_t i = 0;
+	
+	printf("ciphertext_hex : ");
+	
+	for (i = 1; i < cipher_outlen + 1; i++) 
+		printf("%02X ", *(ciphertext + i - 1));
+
+	printf("\n");
+
+	return;
+}
+
+void ascii_as_binary(unsigned char *ciphertext, int cipher_outlen){
+	int result = 0, i = 1, remainder, j, input;
+	char result2[8] = {0x00, };
+	int len = 0;
+
+
+	printf("ciphertext_bin : ");
+
+	
+	for(j = 0; j < cipher_outlen; j++){
+		input = toascii(ciphertext[j]);
+		/*printf("\n%c : ", ciphertext[j]);
+		printf("%d : ",input);*/
+		result = 0;
+		i = 1;
+		while(input > 0){
+			remainder = input % 2;
+			result = result + (i*remainder);
+			input = input/2;
+			i = i*10;
+		}
+		itoa(result, result2,10);
+		len = strlen(result2);
+		while(8-len > 0){
+			printf("0");
+			++len;
+		}
+		printf("%s ", result2);
+	}
+
+	printf("\n");
+	
 	return;
 }
