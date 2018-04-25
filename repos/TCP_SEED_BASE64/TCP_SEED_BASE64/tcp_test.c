@@ -29,9 +29,14 @@ void main(){
 
 	// 암호문을 저장할 변수
 	unsigned char ciphertext[BUFSIZE2+16] = {0x00, };
+	unsigned char ciphertext2[BUFSIZE2+16] = {0x00, };
+
+	// 보낼 메시지를 저장할 변수
+	unsigned char message[BUFSIZE2] = {0x00, };
 	
-	// Base64 decoding 변수
+	// Base64 decoding/encoding 변수
 	unsigned char *b64_dec = NULL;
+	char *b64_enc = NULL;
 
 	/*
 	* cipher_outlen : 암호문의 길이를 저장할 변수
@@ -61,7 +66,7 @@ void main(){
     unsigned short ServerPort = 5005;
 
     if (WSAStartup(MAKEWORD(2,2),&wsaData) == SOCKET_ERROR)
-        return ErrorHandling( "WSAStartup Error.....\n" );
+        ErrorHandling( "WSAStartup Error.....\n" );
 
 	ServerAddress.sin_family = AF_INET;
     ServerAddress.sin_addr.s_addr = inet_addr( ADDRESS );
@@ -70,13 +75,13 @@ void main(){
 	ServerSocket = socket(AF_INET, SOCK_STREAM,0);
 
 	if( ServerSocket == INVALID_SOCKET ) //에러 발생시 문구 출력.
-		return ErrorHandling( "Socket Creation Error....." );
+		ErrorHandling( "Socket Creation Error....." );
 
 	if( bind(ServerSocket,(struct sockaddr*)&ServerAddress,sizeof(ServerAddress) ) == SOCKET_ERROR ) 
-        return ErrorHandling( "Bind Error......" );
+        ErrorHandling( "Bind Error......" );
 
 	if( listen(ServerSocket,SOMAXCONN) == SOCKET_ERROR ) 
-		return ErrorHandling( "Listen Error.....\n" );
+		ErrorHandling( "Listen Error.....\n" );
 
 
 	// socket accept
@@ -86,7 +91,7 @@ void main(){
 
 
 	if( (ClientSocket = accept( ServerSocket,(struct sockaddr*)&ClientAddress , &AddressSize )) == INVALID_SOCKET )
-		return ErrorHandling( "Accept Error.....\n" );
+		ErrorHandling( "Accept Error.....\n" );
 	else
 	{
 		printf("Connect IP: %s, Port : %d\n", inet_ntoa(ClientAddress.sin_addr), htons(ClientAddress.sin_port)) ;
@@ -101,6 +106,8 @@ void main(){
 
 		memset(plaintext, '\0', BUFSIZE2);
 		memset(ciphertext, '\0', BUFSIZE2+16);
+		memset(ciphertext2, '\0', BUFSIZE2+16);
+		memset(message, '\0', BUFSIZE2);
 		//memset(exit_value, '\0', 7);
 
 		nRcv = recv(ClientSocket, (char*)ciphertext, sizeof(ciphertext) -1, 0);
@@ -122,7 +129,18 @@ void main(){
 		plain_outlen = KISA_SEED_CBC_DECRYPT(key, iv, b64_dec, b64dec_len, plaintext);
 
 		printf("Receive Message : %s\n", ciphertext);
-		printf("Send Message : %s\n", plaintext);
+		printf("Receive Message Decrypt : %s\n", plaintext);
+
+		strncpy((char *)message, (const char*)plaintext, plain_outlen-1);
+		strcat((char *)message, " received");
+		
+		cipher_outlen = KISA_SEED_CBC_ENCRYPT(key, iv, message, strlen((const char*)message), ciphertext2);
+		
+		b64_enc = b64_encode(ciphertext2, cipher_outlen);
+
+		printf("Send Message : %s\n", message);
+		printf("Send Message Encrypt : %s\n\n", b64_enc);
+
 
 		/*if(plain_outlen == 5){
 			strncpy(exit_value, (const char*)plaintext, 4);
@@ -134,7 +152,7 @@ void main(){
 			break;
 		}*/
 
-		send(ClientSocket, (const char*)plaintext, plain_outlen, 0);
+		send(ClientSocket, b64_enc, strlen(b64_enc), 0);
 
 	}
 
@@ -155,5 +173,4 @@ void ErrorHandling(char *message){
 	fputc('\n',stderr);
 	//getchar();
 	exit(1);
-	return;
 }
