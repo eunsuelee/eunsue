@@ -1,7 +1,5 @@
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
-#include <ctype.h>
 #include <WinSock2.h>
 #include "b64.h"
 #include "seedcbc.h"
@@ -9,6 +7,7 @@
 #define BUFSIZE 16
 #define BUFSIZE2 10240
 #define ADDRESS "172.16.10.141"
+#define PORT 5005
 
 void ErrorHandling(char *message);
 
@@ -27,13 +26,17 @@ void main(){
 	// 암호문을 복호화한 평문을 저장할 변수
 	unsigned char plaintext[BUFSIZE2] = {0x00, };
 
+
 	// 암호문을 저장할 변수
 	unsigned char ciphertext[BUFSIZE2+16] = {0x00, };
 	unsigned char ciphertext2[BUFSIZE2+16] = {0x00, };
+	
+	
 
 	// 보낼 메시지를 저장할 변수
 	unsigned char message[BUFSIZE2] = {0x00, };
 	
+
 	// Base64 decoding/encoding 변수
 	unsigned char *b64_dec = NULL;
 	char *b64_enc = NULL;
@@ -58,23 +61,27 @@ void main(){
 	*/
 	int nRcv = 0, AddressSize = 0;
 
-	//char exit_value[7] = {0x00, };
 
 	WSADATA        wsaData;
     SOCKET         ServerSocket, ClientSocket;   //소켓을 선언합니다.
-    SOCKADDR_IN    ServerAddress, ClientAddress;  //소켓의 주소 정보를 넣는 구조체입니다.
-    unsigned short ServerPort = 5005;
+    SOCKADDR_IN    ServerAddress, ClientAddress; //소켓의 주소 정보를 넣는 구조체입니다.
+    unsigned short ServerPort = PORT;			 // 포트 번호
 
+
+	// 소켓 초기화 및 2.2버전 설정
     if (WSAStartup(MAKEWORD(2,2),&wsaData) == SOCKET_ERROR)
         ErrorHandling( "WSAStartup Error.....\n" );
 
+	// 소켓 구조체에 값 설정
 	ServerAddress.sin_family = AF_INET;
     ServerAddress.sin_addr.s_addr = inet_addr( ADDRESS );
-	ServerAddress.sin_port = htons( ServerPort );  //포트번호
+	ServerAddress.sin_port = htons( ServerPort );
 
+	// 서버 소켓 생성
 	ServerSocket = socket(AF_INET, SOCK_STREAM,0);
 
-	if( ServerSocket == INVALID_SOCKET ) //에러 발생시 문구 출력.
+	//에러 발생시 문구 출력
+	if( ServerSocket == INVALID_SOCKET ) 
 		ErrorHandling( "Socket Creation Error....." );
 
 	if( bind(ServerSocket,(struct sockaddr*)&ServerAddress,sizeof(ServerAddress) ) == SOCKET_ERROR ) 
@@ -98,9 +105,10 @@ void main(){
 		printf("Start...\n\n");
 	}
 
-	closesocket( ServerSocket ); //소켓을 닫습니다.
+	// 서버소켓을 닫습니다.
+	closesocket( ServerSocket ); 
 
-	// socket receive/send
+	// socket receive & send
 	while(1){
 		printf("Message Receives ...\n");
 
@@ -108,7 +116,6 @@ void main(){
 		memset(ciphertext, '\0', BUFSIZE2+16);
 		memset(ciphertext2, '\0', BUFSIZE2+16);
 		memset(message, '\0', BUFSIZE2);
-		//memset(exit_value, '\0', 7);
 
 		nRcv = recv(ClientSocket, (char*)ciphertext, sizeof(ciphertext) -1, 0);
 
@@ -119,38 +126,32 @@ void main(){
 
 		ciphertext[nRcv] = '\0';
 
-		if(strcmp((const char*)ciphertext, "exit") == 0){
+		if(strcmp((const char*)ciphertext, "exit\n") == 0){
 			printf("Close Client Connection...\n");
 			break;
 		}
 
+		// base64 decoding
 		b64_dec = b64_decode_ex((const char*)ciphertext, strlen((const char*)ciphertext), &b64dec_len);
 
+		// decrypt
 		plain_outlen = KISA_SEED_CBC_DECRYPT(key, iv, b64_dec, b64dec_len, plaintext);
 
 		printf("Receive Message : %s\n", ciphertext);
 		printf("Receive Message Decrypt : %s\n", plaintext);
 
+		// message making
 		strncpy((char *)message, (const char*)plaintext, plain_outlen-1);
 		strcat((char *)message, " received");
 		
+		// encrypt
 		cipher_outlen = KISA_SEED_CBC_ENCRYPT(key, iv, message, strlen((const char*)message), ciphertext2);
 		
+		// base64 encoding
 		b64_enc = b64_encode(ciphertext2, cipher_outlen);
 
 		printf("Send Message : %s\n", message);
 		printf("Send Message Encrypt : %s\n\n", b64_enc);
-
-
-		/*if(plain_outlen == 5){
-			strncpy(exit_value, (const char*)plaintext, 4);
-			exit_value[4] = '\0';
-		}
-
-		if(strcmp(exit_value, "exit") == 0){
-			send(ClientSocket, (const char*)exit_value, strlen(exit_value), 0);
-			break;
-		}*/
 
 		send(ClientSocket, b64_enc, strlen(b64_enc), 0);
 
@@ -161,6 +162,7 @@ void main(){
 	WSACleanup();
 
 	free(b64_dec);
+	free(b64_enc);
 
 	printf( "The server program has been terminated.\n" );
 
@@ -171,6 +173,5 @@ void ErrorHandling(char *message){
 	WSACleanup();
 	fputs(message, stderr);
 	fputc('\n',stderr);
-	//getchar();
 	exit(1);
 }
