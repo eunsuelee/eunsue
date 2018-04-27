@@ -69,8 +69,9 @@ void main(){
 
 
 	// 소켓 초기화 및 2.2버전 설정
-    if (WSAStartup(MAKEWORD(2,2),&wsaData) == SOCKET_ERROR)
+    if (WSAStartup(MAKEWORD(2,2),&wsaData) == SOCKET_ERROR){
         ErrorHandling( "WSAStartup Error.....\n" );
+	}
 
 	// 소켓 구조체에 값 설정
 	ServerAddress.sin_family = AF_INET;
@@ -81,14 +82,17 @@ void main(){
 	ServerSocket = socket(AF_INET, SOCK_STREAM,0);
 
 	//에러 발생시 문구 출력
-	if( ServerSocket == INVALID_SOCKET ) 
+	if( ServerSocket == INVALID_SOCKET ) {
 		ErrorHandling( "Socket Creation Error....." );
+	}
 
-	if( bind(ServerSocket,(struct sockaddr*)&ServerAddress,sizeof(ServerAddress) ) == SOCKET_ERROR ) 
+	if( bind(ServerSocket,(struct sockaddr*)&ServerAddress,sizeof(ServerAddress) ) == SOCKET_ERROR ) {
         ErrorHandling( "Bind Error......" );
+	}
 
-	if( listen(ServerSocket,SOMAXCONN) == SOCKET_ERROR ) 
+	if( listen(ServerSocket,SOMAXCONN) == SOCKET_ERROR ) {
 		ErrorHandling( "Listen Error.....\n" );
+	}
 
 
 	// socket accept
@@ -97,8 +101,9 @@ void main(){
 	printf( "Waiting for connection to the server...\n" );
 
 
-	if( (ClientSocket = accept( ServerSocket,(struct sockaddr*)&ClientAddress , &AddressSize )) == INVALID_SOCKET )
+	if( (ClientSocket = accept( ServerSocket,(struct sockaddr*)&ClientAddress , &AddressSize )) == INVALID_SOCKET ){
 		ErrorHandling( "Accept Error.....\n" );
+	}
 	else
 	{
 		printf("Connect IP: %s, Port : %d\n", inet_ntoa(ClientAddress.sin_addr), htons(ClientAddress.sin_port)) ;
@@ -131,26 +136,55 @@ void main(){
 			break;
 		}
 
-		// base64 decoding
+		/*
+
+		* BASE64 DECODE
+
+		* 디코딩할 변수, 그 변수의 길이, 디코딩된 후 변수의 길이
+
+		*/
 		b64_dec = b64_decode_ex((const char*)ciphertext, strlen((const char*)ciphertext), &b64dec_len);
 
-		// decrypt
+		
+		/*
+
+		* SEED-CBC 복호화
+
+		* key, iv, 입력버퍼(암호문), 입력길이(암호문길이), 출력버퍼(평문) 입력
+
+		* 생성된 평문의 길이 반환 (결과가 0일 경우 복호화 실패)
+
+		*/
 		plain_outlen = KISA_SEED_CBC_DECRYPT(key, iv, b64_dec, b64dec_len, plaintext);
 
 		printf("Receive Message : %s\n", ciphertext);
 		printf("Receive Message Decrypt : %s\n", plaintext);
 
 		// message making
-		memcpy((char *)message, (const char*)plaintext, plain_outlen-1);
-		strcat((char *)message, " received");
+		memcpy((char *)message, (const char *)plaintext, plain_outlen-1);
+		strcat_s((char*)message, BUFSIZE2, " received");
+		
+		
+		/*
 
-		message[plain_outlen+strlen(" received")] = '\0';
-		
-		
-		// encrypt
+		* SEED-CBC 암호화
+
+		* key, iv, 입력버퍼(평문), 입력길이(평문길이), 출력버퍼(암호문) 입력
+
+		* padding PKCS#7 이용
+
+		* 생성된 암호문의 길이 반환 (결과가 0일 경우 암호화 실패)
+
+		*/
 		cipher_outlen = KISA_SEED_CBC_ENCRYPT(key, iv, message, strlen((const char*)message), ciphertext2);
 		
-		// base64 encoding
+		/*
+
+		* BASE64 ENCODE
+
+		* 인코딩할 변수, 그 변수의 길이
+
+		*/
 		b64_enc = b64_encode(ciphertext2, cipher_outlen);
 
 		printf("Send Message : %s\n", message);
@@ -158,14 +192,16 @@ void main(){
 
 		send(ClientSocket, b64_enc, strlen(b64_enc), 0);
 
+		
+		free(b64_dec);
+		free(b64_enc);
+
 	}
 
 	closesocket(ClientSocket);
 
 	WSACleanup();
 
-	free(b64_dec);
-	free(b64_enc);
 
 	printf( "The server program has been terminated.\n" );
 
