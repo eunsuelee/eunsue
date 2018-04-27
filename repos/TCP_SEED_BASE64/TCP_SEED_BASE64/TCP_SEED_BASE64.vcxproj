@@ -80,8 +80,8 @@
     <ClInclude Include="..\SEED\seedcbc.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\BASE64\decode.c" />
-    <ClCompile Include="..\BASE64\encode.c" />
+    <ClCompile Include="..\BASE64\b64_decode.c" />
+    <ClCompile Include="..\BASE64\b64_encode.c" />
     <ClCompile Include="..\SEED\seedcbc.c" />
     <ClCompile Include="tcp_test.c" />
   </ItemGroup>

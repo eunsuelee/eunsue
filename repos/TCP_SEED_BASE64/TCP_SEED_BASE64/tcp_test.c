@@ -141,8 +141,11 @@ void main(){
 		printf("Receive Message Decrypt : %s\n", plaintext);
 
 		// message making
-		strncpy((char *)message, (const char*)plaintext, plain_outlen-1);
+		memcpy((char *)message, (const char*)plaintext, plain_outlen-1);
 		strcat((char *)message, " received");
+
+		message[plain_outlen+strlen(" received")] = '\0';
+		
 		
 		// encrypt
 		cipher_outlen = KISA_SEED_CBC_ENCRYPT(key, iv, message, strlen((const char*)message), ciphertext2);
